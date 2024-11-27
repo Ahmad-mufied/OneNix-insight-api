@@ -19,8 +19,16 @@ type Crawler struct {
 	DB    *repository.DynamoDBClient
 }
 
-// FetchAndSaveNews Fetch news and cache it
 func (c *Crawler) FetchAndSaveNews() {
+
+	// Fetch fresh data
+	query := "study abroad news"
+	results, err := searchGoogle(query)
+	if err != nil {
+		log.Println("Error fetching news:", err)
+		return
+	}
+
 	cacheKey := "latest_news"
 	cachedData, err := c.Cache.Get(cacheKey)
 	if err == nil {
@@ -30,16 +38,8 @@ func (c *Crawler) FetchAndSaveNews() {
 		if err := json.Unmarshal(cachedData, &newsList); err != nil {
 			log.Printf("Error unmarshalling cached data: %v", err)
 		} else {
-			return // Skip fetching and saving if cache is valid
+			return // Skip saving if cache is valid
 		}
-	}
-
-	// Cache miss, fetch fresh data
-	query := "study abroad news"
-	results, err := searchGoogle(query)
-	if err != nil {
-		log.Println("Error fetching news:", err)
-		return
 	}
 
 	var savedNews []model.News
@@ -60,7 +60,10 @@ func (c *Crawler) FetchAndSaveNews() {
 				log.Printf("News saved: %s\n", news.Title)
 			}
 		}
+
 	}
+
+	log.Println("Serving news from Google.")
 
 	// Cache the newly fetched data
 	if len(savedNews) > 0 {
@@ -90,6 +93,7 @@ func searchGoogle(query string) ([]model.News, error) {
 		return nil, fmt.Errorf("HTTP Error: %d", resp.StatusCode)
 	}
 
+	log.Println("Fetched news from Google")
 	var result struct {
 		Items []struct {
 			Title   string `json:"title"`
