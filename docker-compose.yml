@@ -1,21 +1,21 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080" # Expose the app on localhost:8080
-    environment:
-      - MEMCACHED_HOST=memcached
-      - MEMCACHED_PORT=11211
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_REGION=${AWS_REGION}
-      - GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY=${GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY}
-      - GOOGLE_CUSTOM_SEARCH_ENGINE_ID=${GOOGLE_CUSTOM_SEARCH_ENGINE_ID}
-      - DYNAMODB_REGION=${DYNAMODB_REGION}
-    depends_on:
-      - memcached
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8080:8080" # Expose the app on localhost:8080
+#    environment:
+#      - MEMCACHED_HOST=memcached
+#      - MEMCACHED_PORT=11211
+#      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+#      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+#      - AWS_REGION=${AWS_REGION}
+#      - GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY=${GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY}
+#      - GOOGLE_CUSTOM_SEARCH_ENGINE_ID=${GOOGLE_CUSTOM_SEARCH_ENGINE_ID}
+#      - DYNAMODB_REGION=${DYNAMODB_REGION}
+#    depends_on:
+#      - memcached
 
 
   memcached:
@@ -26,3 +26,29 @@ services:
       - --threads=4
     ports:
       - "11211:11211"
+
+#  mongo:
+#    image: 'mongo:6.0-focal'
+#    ports:
+#      - "27017:27017"
+#    environment:
+#      MONGO_INITDB_DATABASE: logs
+#      MONGO_INITDB_ROOT_USERNAME: admin
+#      MONGO_INITDB_ROOT_PASSWORD: password
+#    volumes:
+#      - ./db-data/mongo:/home/mongo-test/db
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    ports:
+      - "27017:27017" # Expose MongoDB on localhost:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db # Persist MongoDB data
+
+volumes:
+  mongodb_data:
+    driver: local # Use local driver for persistence
