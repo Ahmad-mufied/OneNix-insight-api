@@ -6,13 +6,20 @@ import (
 	"log"
 )
 
-// init initializes the configuration by reading from a .env file or environment variables.
-// It sets the following global variables:
-// - GoogleCustomSearchEngineAPIKey: API key for Google Custom Search Engine
-// - GoogleCustomSearchEngineID: ID for Google Custom Search Engine
-// - MemcachedServer: Address of the Memcached server
-// - DynamodbRegion: AWS region for DynamoDB
 func init() {
+
+	// Initialize Viper
+	LoadConfig()
+
+	// Set global variables from the configuration
+	GoogleCustomSearchEngineAPIKey = Viper.GetString("GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY")
+	GoogleCustomSearchEngineID = Viper.GetString("GOOGLE_CUSTOM_SEARCH_ENGINE_ID")
+	MemcachedServer = fmt.Sprintf("%s:%s", Viper.GetString("MEMCACHED_HOST"), Viper.GetString("MEMCACHED_PORT"))
+	// Init Mongo
+	InitMongo()
+}
+
+func LoadConfig() {
 	v := viper.New()
 	Viper = v
 	// Set the configuration file to .env
@@ -28,10 +35,4 @@ func init() {
 	} else {
 		log.Println("Loaded .env file")
 	}
-
-	// Set global variables from the configuration
-	GoogleCustomSearchEngineAPIKey = v.GetString("GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY")
-	GoogleCustomSearchEngineID = v.GetString("GOOGLE_CUSTOM_SEARCH_ENGINE_ID")
-	MemcachedServer = fmt.Sprintf("%s:%s", v.GetString("MEMCACHED_HOST"), v.GetString("MEMCACHED_PORT"))
-	DynamodbRegion = v.GetString("DYNAMODB_REGION")
 }

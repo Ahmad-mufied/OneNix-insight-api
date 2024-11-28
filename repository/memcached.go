@@ -1,58 +1,64 @@
 package repository
 
 import (
-	"errors"
-	"github.com/bradfitz/gomemcache/memcache"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"google-custom-search/model"
 	"log"
+	"time"
+
+	"github.com/bradfitz/gomemcache/memcache"
 )
 
-// MemcachedClient is a wrapper around the memcache.Client to provide additional methods.
 type MemcachedClient struct {
-	Client *memcache.Client
+	client *memcache.Client
 }
 
-// NewMemcachedClient initializes a new Memcached client.
-// It takes the server address as a parameter and returns a pointer to MemcachedClient.
-func NewMemcachedClient(server string) *MemcachedClient {
-	client := memcache.New(server)
-	return &MemcachedClient{Client: client}
-}
-
-// Set stores a value in the cache with the given key and expiration time.
-// It returns an error if the operation fails.
-func (m *MemcachedClient) Set(key string, value []byte, expiration int32) error {
-	err := m.Client.Set(&memcache.Item{
-		Key:        key,
-		Value:      value,
-		Expiration: expiration, // Time in seconds
-	})
-	if err != nil {
-		log.Printf("Error setting cache: %v", err)
+func NewMemcachedClient(host string) *MemcachedClient {
+	return &MemcachedClient{
+		client: memcache.New(host),
 	}
-	return err
 }
 
-// Get retrieves a value from the cache by its key.
-// It returns the value and an error if the operation fails or if the key is not found.
-func (m *MemcachedClient) Get(key string) ([]byte, error) {
-	item, err := m.Client.Get(key)
-	if err != nil {
-		if errors.Is(err, memcache.ErrCacheMiss) {
-			log.Printf("Cache miss for key: %s", key)
-		} else {
-			log.Printf("Error getting cache: %v", err)
+func generateCacheKey(filters map[string]string) string {
+	hash := sha256.New()
+	for k, v := range filters {
+		if v == "" {
+			// If the value is empty, used 'all' as the default value
+			v = "all"
+
 		}
+		hash.Write([]byte(k + "=" + v + "&"))
+	}
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+func (r *MemcachedClient) GetCachedList(filters map[string]string) ([]model.News, error) {
+	cacheKey := generateCacheKey(filters)
+	log.Println("Cache key:", cacheKey)
+	item, err := r.client.Get(cacheKey)
+	if err != nil {
 		return nil, err
 	}
-	return item.Value, nil
+
+	var newsList []model.News
+	err = json.Unmarshal(item.Value, &newsList)
+	if err != nil {
+		return nil, err
+	}
+	return newsList, nil
 }
 
-// Delete removes a value from the cache by its key.
-// It returns an error if the operation fails.
-func (m *MemcachedClient) Delete(key string) error {
-	err := m.Client.Delete(key)
-	if err != nil && !errors.Is(err, memcache.ErrCacheMiss) {
-		log.Printf("Error deleting cache: %v", err)
+func (r *MemcachedClient) SetCachedList(filters map[string]string, newsList []model.News) error {
+	cacheKey := generateCacheKey(filters)
+	data, err := json.Marshal(newsList)
+	if err != nil {
+		return err
 	}
-	return err
+	return r.client.Set(&memcache.Item{
+		Key:        cacheKey,
+		Value:      data,
+		Expiration: int32(10 * time.Minute.Seconds()), // Cache for 10 minutes
+	})
 }

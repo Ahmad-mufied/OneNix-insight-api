@@ -1,54 +1,48 @@
 package handler
 
 import (
-	"encoding/json"
-	"google-custom-search/model"
+	"github.com/labstack/echo/v4"
 	"google-custom-search/repository"
 	"log"
 	"net/http"
-	"time"
-
-	"github.com/labstack/echo/v4"
 )
 
 // NewsHandler handles requests related to news.
 // It contains a cache client and a DynamoDB client.
 type NewsHandler struct {
 	Cache *repository.MemcachedClient
-	DB    *repository.DynamoDBClient
+	DB    *repository.MongoRepository
 }
 
-// GetLatestNews handles the API request to get the latest news.
-// It first checks the cache for the latest news. If the news is not in the cache,
-// it fetches the news from DynamoDB, caches the result, and returns it.
-// If there is an error during any of these operations, it returns an appropriate error response.
 func (h *NewsHandler) GetLatestNews(c echo.Context) error {
-	cacheKey := "latest_news"
-	cachedData, err := h.Cache.Get(cacheKey)
+	ctx := c.Request().Context()
+
+	// Extract filters from query parameters
+	filters := map[string]string{
+		"country": c.QueryParam("country"),
+		"degree":  c.QueryParam("degree"),
+		"major":   c.QueryParam("major"),
+	}
+
+	// Check cache first
+	newsList, err := h.Cache.GetCachedList(filters)
 	if err == nil {
-		// Return cached data if available
-		var newsList []model.News
-		if err := json.Unmarshal(cachedData, &newsList); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to parse cached data"})
-		}
+		log.Println("Cache hit")
 		return c.JSON(http.StatusOK, newsList)
 	}
 
-	// Cache miss, fetch data from DynamoDB
-	newsList, err := h.DB.GetAllNews()
+	// If cache miss, query MongoDB
+	log.Println("Cache miss")
+	newsList, err = h.DB.List(ctx, filters)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch news"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-	log.Println("Serving news from DynamoDB.")
 
-	// Cache the data
-	cacheData, err := json.Marshal(newsList)
-	if err == nil {
-		log.Println("Caching news data.")
-		err := h.Cache.Set(cacheKey, cacheData, int32(24*time.Hour.Seconds()))
-		if err != nil {
-			log.Printf("Error caching data: %v", err)
-		}
+	// Store result in cache
+	log.Println("Storing result in cache")
+	err = h.Cache.SetCachedList(filters, newsList)
+	if err != nil {
+		log.Printf("Error storing result in cache: %v\n", err)
 	}
 
 	return c.JSON(http.StatusOK, newsList)
