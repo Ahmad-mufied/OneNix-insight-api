@@ -41,7 +41,7 @@ func startAndGracefullyStopServer(e *echo.Echo, newsHandler *handler.NewsHandler
 	log.Printf("Starting server on port %s...", port)
 
 	server := &http.Server{
-		Addr:    ":" + port,
+		Addr:    "0.0.0.0:" + port,
 		Handler: e,
 	}
 
