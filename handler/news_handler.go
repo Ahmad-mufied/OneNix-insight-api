@@ -2,7 +2,9 @@ package handler
 
 import (
 	"github.com/labstack/echo/v4"
+	"google-custom-search/model"
 	"google-custom-search/repository"
+	"google-custom-search/utils"
 	"log"
 	"net/http"
 )
@@ -28,14 +30,24 @@ func (h *NewsHandler) GetLatestNews(c echo.Context) error {
 	newsList, err := h.Cache.GetCachedList(filters)
 	if err == nil {
 		log.Println("Cache hit")
-		return c.JSON(http.StatusOK, newsList)
+		return c.JSON(http.StatusOK, model.JSONResponse{
+			Status:  http.StatusOK,
+			Message: "Success fetching news",
+			Count:   len(newsList),
+			Data:    newsList,
+		})
 	}
 
 	// If cache miss, query MongoDB
 	log.Println("Cache miss")
 	newsList, err = h.DB.List(ctx, filters)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return utils.HandleError(c, utils.NewAPIError(http.StatusInternalServerError, "Failed to fetch news", nil))
+	}
+
+	// Check if the list is empty and return an error
+	if len(newsList) == 0 {
+		return utils.HandleError(c, utils.NewAPIError(http.StatusNotFound, "No news found", nil))
 	}
 
 	// Store result in cache
@@ -43,7 +55,13 @@ func (h *NewsHandler) GetLatestNews(c echo.Context) error {
 	err = h.Cache.SetCachedList(filters, newsList)
 	if err != nil {
 		log.Printf("Error storing result in cache: %v\n", err)
+		return utils.HandleError(c, utils.NewAPIError(http.StatusInternalServerError, "Failed to fetch news", nil))
 	}
 
-	return c.JSON(http.StatusOK, newsList)
+	return c.JSON(http.StatusOK, model.JSONResponse{
+		Status:  http.StatusOK,
+		Message: "Success fetching news",
+		Count:   len(newsList),
+		Data:    newsList,
+	})
 }

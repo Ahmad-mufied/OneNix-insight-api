@@ -17,6 +17,8 @@ func init() {
 	MemcachedServer = fmt.Sprintf("%s:%s", Viper.GetString("MEMCACHED_HOST"), Viper.GetString("MEMCACHED_PORT"))
 	// Init Mongo
 	InitMongo()
+
+	AutoFetchSwitch = Viper.GetBool("AUTO_FETCH_SWITCH")
 }
 
 func LoadConfig() {

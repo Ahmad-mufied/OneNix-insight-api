@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type GoogleSearchAPI struct {
@@ -58,7 +57,6 @@ func FetchNews(query string) ([]*model.News, error) {
 		}
 		newsList = append(newsList, &model.News{
 			Title:     item.Title,
-			Date:      time.Now().Format(time.RFC3339),
 			Thumbnail: thumbnail,
 			Snippet:   item.Snippet,
 			Link:      item.Link,
@@ -90,12 +88,12 @@ func (g *GoogleSearchAPI) RunTask() {
 		log.Printf("Error dropping collection: %v", err)
 	}
 
-	//countries := []string{"Germany", "United States", "Malaysia", "Australia"}
-	//degrees := []string{"Diploma", "Bachelor", "Master", "Doctoral"}
-	//majors := []string{"Art", "Science", "Social"}
-	countries := []string{"Australia"}
-	degrees := []string{"Diploma"}
-	majors := []string{"Art"}
+	countries := []string{"Germany", "United States", "Malaysia", "Australia"}
+	degrees := []string{"Diploma", "Bachelor", "Master", "Doctoral"}
+	majors := []string{"Art", "Science", "Social"}
+	//countries := []string{"Australia"}
+	//degrees := []string{"Diploma"}
+	//majors := []string{"Art", "Social"}
 
 	for _, country := range countries {
 		for _, degree := range degrees {

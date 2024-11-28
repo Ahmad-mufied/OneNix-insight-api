@@ -22,7 +22,10 @@ func main() {
 	mongoRepo := repository.NewMongoRepository(config.DB.Database("news").Collection("news"))
 	newsHandler := handler.NewsHandler{Cache: memcachedRepo, DB: mongoRepo}
 
-	initializeAndStartCrawlerService(mongoRepo)
+	if config.AutoFetchSwitch {
+		initializeAndStartCrawlerService(mongoRepo)
+	}
+
 	e := echo.New()
 	startAndGracefullyStopServer(e, &newsHandler)
 }
