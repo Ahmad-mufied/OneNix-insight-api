@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/go-co-op/gocron"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"google-custom-search/config"
 	"google-custom-search/handler"
 	"google-custom-search/repository"
@@ -27,6 +28,14 @@ func main() {
 	}
 
 	e := echo.New()
+
+	// Add CORS middleware
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:3000", "https://your-frontend-domain.com"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAuthorization},
+	}))
+
 	startAndGracefullyStopServer(e, &newsHandler)
 }
 
@@ -41,7 +50,7 @@ func startAndGracefullyStopServer(e *echo.Echo, newsHandler *handler.NewsHandler
 	log.Printf("Starting server on port %s...", port)
 
 	server := &http.Server{
-		Addr:    "0.0.0.0:" + port,
+		Addr:    ":" + port,
 		Handler: e,
 	}
 

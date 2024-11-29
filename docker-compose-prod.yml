@@ -1,0 +1,16 @@
+services:
+  app:
+    image: ahmadryzen/onenix-insight-api:latest
+    container_name: onenix-insight-api
+    ports:
+      - "8080:8080" # Expose the app on localhost:8080
+    environment:
+      - APP_ENV=production
+      - WEB_SERVER_PORT=8080
+      - MEMCACHED_HOST=${MEMCACHED_HOST}
+      - MEMCACHED_PORT=${MEMCACHED_PORT}
+      - GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY=${GOOGLE_CUSTOM_SEARCH_ENGINE_API_KEY}
+      - GOOGLE_CUSTOM_SEARCH_ENGINE_ID=${GOOGLE_CUSTOM_SEARCH_ENGINE_ID}
+      - MONGO_URI=${MONGO_URI}
+      - AUTO_FETCH_SWITCH=off
+
