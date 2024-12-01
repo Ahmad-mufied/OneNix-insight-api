@@ -18,7 +18,7 @@ type GoogleSearchAPI struct {
 func FetchNews(query string) ([]*model.News, error) {
 	query = strings.ReplaceAll(query, " ", "+")
 	apiURL := fmt.Sprintf(
-		"https://www.googleapis.com/customsearch/v1?q=%s&key=%s&cx=%s",
+		"https://www.googleapis.com/customsearch/v1?q=%s&key=%s&cx=%s&sort=date&dateRestrict=m[1]",
 		query, config.GoogleCustomSearchEngineAPIKey, config.GoogleCustomSearchEngineID,
 	)
 
@@ -93,7 +93,7 @@ func (g *GoogleSearchAPI) RunTask() {
 	majors := []string{"Art", "Science", "Social"}
 	//countries := []string{"Australia"}
 	//degrees := []string{"Diploma"}
-	//majors := []string{"Art", "Social"}
+	//majors := []string{"Art"}
 
 	for _, country := range countries {
 		for _, degree := range degrees {
