@@ -26,6 +26,11 @@ func (h *NewsHandler) GetLatestNews(c echo.Context) error {
 		"major":   c.QueryParam("major"),
 	}
 
+	// check if country is United States then set the country to US
+	if filters["country"] == "United States" {
+		filters["country"] = "US"
+	}
+
 	// Check cache first
 	newsList, err := h.Cache.GetCachedList(filters)
 	if err == nil {
