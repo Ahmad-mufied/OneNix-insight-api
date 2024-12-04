@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/labstack/echo/v4"
+	"google-custom-search/config"
 	"google-custom-search/model"
 	"google-custom-search/repository"
 	"google-custom-search/utils"
@@ -31,10 +32,21 @@ func (h *NewsHandler) GetLatestNews(c echo.Context) error {
 		filters["country"] = "United States"
 	}
 
-	// Check cache first
-	newsList, err := h.Cache.GetCachedList(filters)
-	if err == nil {
-		log.Println("Cache hit")
+	var newsList []model.News
+
+	// Check cache not enabled
+	if !config.CacheSwitch {
+		log.Println("Cache not enabled")
+		newsList, err := h.DB.List(ctx, filters)
+		if err != nil {
+			return utils.HandleError(c, utils.NewAPIError(http.StatusInternalServerError, "Failed to fetch news", nil))
+		}
+
+		// Check if the list is empty and return an error
+		if len(newsList) == 0 {
+			return utils.HandleError(c, utils.NewAPIError(http.StatusNotFound, "No news found", nil))
+		}
+
 		return c.JSON(http.StatusOK, model.JSONResponse{
 			Status:  http.StatusOK,
 			Message: "Success fetching news",
@@ -43,24 +55,25 @@ func (h *NewsHandler) GetLatestNews(c echo.Context) error {
 		})
 	}
 
-	// If cache miss, query MongoDB
-	log.Println("Cache miss")
-	newsList, err = h.DB.List(ctx, filters)
+	// Check cache enabled
+	newsList, err := h.Cache.GetCachedList(filters)
 	if err != nil {
-		return utils.HandleError(c, utils.NewAPIError(http.StatusInternalServerError, "Failed to fetch news", nil))
-	}
+		log.Println("Cache miss")
+		newsList, err = h.DB.List(ctx, filters)
+		if err != nil {
+			return utils.HandleError(c, utils.NewAPIError(http.StatusInternalServerError, "Failed to fetch news", nil))
+		}
 
-	// Check if the list is empty and return an error
-	if len(newsList) == 0 {
-		return utils.HandleError(c, utils.NewAPIError(http.StatusNotFound, "No news found", nil))
-	}
+		// Check if the list is empty and return an error
+		if len(newsList) == 0 {
+			return utils.HandleError(c, utils.NewAPIError(http.StatusNotFound, "No news found", nil))
+		}
 
-	// Store result in cache
-	log.Println("Storing result in cache")
-	err = h.Cache.SetCachedList(filters, newsList)
-	if err != nil {
-		log.Printf("Error storing result in cache: %v\n", err)
-		return utils.HandleError(c, utils.NewAPIError(http.StatusInternalServerError, "Failed to fetch news", nil))
+		// Set the list to cache
+		err = h.Cache.SetCachedList(filters, newsList)
+		if err != nil {
+			log.Println("Failed to set cache")
+		}
 	}
 
 	return c.JSON(http.StatusOK, model.JSONResponse{

@@ -19,6 +19,7 @@ func init() {
 	InitMongo()
 
 	AutoFetchSwitch = Viper.GetBool("AUTO_FETCH_SWITCH")
+	CacheSwitch = Viper.GetBool("CACHE_SWITCH")
 }
 
 func LoadConfig() {
